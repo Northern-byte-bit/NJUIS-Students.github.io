@@ -8,11 +8,8 @@
   </p>
 
   <p>
-    <a href="https://github.com/NJUIS-Students/NJUIS-Students.github.io/actions/workflows/deploy.yml">
-      <img src="https://img.shields.io/github/actions/workflow/status/NJUIS-Students/NJUIS-Students.github.io/deploy.yml?style=for-the-badge&label=Deploy" alt="deploy" />
-    </a>
     <a href="https://github.com/NJUIS-Students/NJUIS-Students.github.io/stargazers">
-      <img src="https://img.shields.io/github/stars/NJUIS-Students/NJUIS-Students.github.io?style=for-the-badge&logo=github&label=Stars&color=f59e0b" alt="stars" />
+      <img src="https://img.shields.io/github/stars/NJUIS-Students/NJUIS-Students.github.io?style=for-the-badge&logo=github&label=%E2%AD%90%EF%B8%8F%20Stars&color=f59e0b" alt="stars" />
     </a>
     <img src="https://img.shields.io/badge/VitePress-2.0-blue?style=for-the-badge&logo=vite" alt="vitepress" />
     <img src="https://img.shields.io/badge/Docs-Community%20Driven-16a34a?style=for-the-badge" alt="community" />
