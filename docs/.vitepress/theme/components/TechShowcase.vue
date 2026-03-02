@@ -32,7 +32,7 @@ const techs = [
   { name: 'Multimodal AI', desc: 'Vision-Language Alignment' },
   { name: 'Embodied AI', desc: 'Perception-Action Loop' },
   { name: 'Neuro-Symbolic', desc: 'Neural + Logic Reasoning' },
-  { name: 'LSTM', desc: 'Long Short-Term Memory' },
+  { name: '3D Gaussian', desc: 'Gaussian Splatting Rendering' },
   { name: 'Video Understanding', desc: 'Temporal-Spatial Reasoning' },
   { name: 'AI for Science', desc: 'Scientific Discovery Engine' },
 ]
@@ -934,98 +934,81 @@ onMounted(() => {
     frame()
   }
 
-  // ====== 10. LSTM ======
+  // ====== 10. 3D Gaussian Splatting ======
   function startLSTM(cvs) {
     const ctx = initCanvas(cvs)
     let time = 0
+    let camAngle = 0
 
-    // 4 个时间步展开（居中）
-    const cellW = 48, cellH = 60, cellGap = 14
-    const totalW = 4 * cellW + 3 * cellGap
-    const startX = (W - totalW) / 2
-    const cells = Array.from({ length: 4 }, (_, i) => ({
-      x: startX + i * (cellW + cellGap), y: H / 2, w: cellW, h: cellH,
+    // 3D 高斯点云
+    const gaussians = Array.from({ length: 60 }, () => ({
+      x3d: (Math.random() - 0.5) * 120,
+      y3d: (Math.random() - 0.5) * 80,
+      z3d: (Math.random() - 0.5) * 120,
+      r: 4 + Math.random() * 12,
+      hue: Math.random() * 360,
+      opacity: 0.15 + Math.random() * 0.25,
+      scaleX: 0.6 + Math.random() * 0.8,
+      scaleY: 0.6 + Math.random() * 0.8,
+      rot: Math.random() * Math.PI,
     }))
 
-    const gateLabels = ['f', 'i', 'o']
-    const gateColors = ['rgba(255,100,100,', 'rgba(0,229,255,', 'rgba(0,230,118,']
-
-    let flowParticles = []
-    let cellStateParticles = []
+    function project(x3d, y3d, z3d) {
+      const cos = Math.cos(camAngle), sin = Math.sin(camAngle)
+      const rx = x3d * cos - z3d * sin
+      const rz = x3d * sin + z3d * cos
+      const scale = 200 / (200 + rz)
+      return { x: W / 2 + rx * scale, y: H / 2 + y3d * scale, s: scale, z: rz }
+    }
 
     function frame() {
       time++; ctx.clearRect(0, 0, W, H)
-      const cellY = H / 2
+      camAngle += 0.006
 
-      // Cell State 线
-      const stateY = cellY - 38
-      ctx.strokeStyle = `rgba(255,180,0,${0.15 + Math.sin(time * 0.04) * 0.05})`
-      ctx.lineWidth = 2; ctx.beginPath()
-      ctx.moveTo(cells[0].x - 10, stateY)
-      ctx.lineTo(cells[cells.length - 1].x + cells[0].w + 10, stateY)
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(255,180,0,0.3)'; ctx.font = '6px monospace'
-      ctx.fillText('Cell State (C_t)', cells[0].x, stateY - 6)
+      // 按深度排序（远处先画）
+      const projected = gaussians.map(g => {
+        const p = project(g.x3d, g.y3d, g.z3d)
+        return { ...g, px: p.x, py: p.y, ps: p.s, pz: p.z }
+      }).sort((a, b) => b.pz - a.pz)
 
-      // Hidden State 线
-      const hiddenY = cellY + 38
-      ctx.strokeStyle = `rgba(0,229,255,${0.1 + Math.sin(time * 0.035) * 0.04})`
-      ctx.lineWidth = 1.5; ctx.beginPath()
-      ctx.moveTo(cells[0].x - 10, hiddenY)
-      ctx.lineTo(cells[cells.length - 1].x + cells[0].w + 10, hiddenY)
-      ctx.stroke()
-      ctx.fillStyle = 'rgba(0,229,255,0.25)'
+      // 绘制高斯椭圆
+      projected.forEach(g => {
+        const pulse = 0.8 + Math.sin(time * 0.03 + g.hue * 0.01) * 0.2
+        const rx = g.r * g.scaleX * g.ps * pulse
+        const ry = g.r * g.scaleY * g.ps * pulse
+        const alpha = g.opacity * g.ps * pulse
 
-      // 每个 LSTM 单元
-      cells.forEach((cell, ci) => {
-        const cx = cell.x, cy = cell.y
-        const pulse = 0.5 + Math.sin(time * 0.05 + ci * 1.5) * 0.2
+        ctx.save()
+        ctx.translate(g.px, g.py)
+        ctx.rotate(g.rot + camAngle * 0.3)
 
-        ctx.strokeStyle = `rgba(0,229,255,${0.15 * pulse})`; ctx.lineWidth = 1
-        ctx.strokeRect(cx, cy - 24, cell.w, cell.h - 12)
+        // 高斯径向渐变（椭圆）
+        const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(rx, ry))
+        grad.addColorStop(0, `hsla(${g.hue},70%,65%,${alpha * 0.7})`)
+        grad.addColorStop(0.4, `hsla(${g.hue},60%,55%,${alpha * 0.35})`)
+        grad.addColorStop(1, `hsla(${g.hue},50%,50%,0)`)
+        ctx.fillStyle = grad
 
-        gateLabels.forEach((g, gi) => {
-          const gx = cx + (cell.w - 3 * 10 - 2 * 6) / 2 + gi * 16, gy = cy - 8
-          const gateActive = Math.sin(time * 0.07 + ci * 2 + gi * 1.3) > 0
-          const gAlpha = gateActive ? 0.6 * pulse : 0.15
-
-          ctx.fillStyle = `${gateColors[gi]}${gAlpha})`
-          ctx.beginPath(); ctx.arc(gx + 5, gy + 5, 5, 0, Math.PI * 2); ctx.fill()
-
-        })
+        ctx.beginPath()
+        ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2)
+        ctx.fill()
+        ctx.restore()
       })
 
-      // Cell State 流粒子
-      if (time % 12 === 0) cellStateParticles.push({ x: cells[0].x - 10, y: stateY, speed: 1.2 + Math.random() * 0.5 })
-      cellStateParticles = cellStateParticles.filter(p => {
-        p.x += p.speed; if (p.x > cells[cells.length - 1].x + cells[0].w + 20) return false
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 5)
-        g.addColorStop(0, 'rgba(255,180,0,0.6)'); g.addColorStop(1, 'transparent')
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 5, 0, Math.PI * 2); ctx.fill()
-        return true
-      })
+      // 相机视角指示器
+      const camX = W - 35, camY = H - 25
+      ctx.strokeStyle = 'rgba(0,229,255,0.2)'; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.arc(camX, camY, 10, 0, Math.PI * 2); ctx.stroke()
+      const cx2 = camX + Math.cos(camAngle * 3) * 7
+      const cy2 = camY + Math.sin(camAngle * 3) * 7
+      ctx.fillStyle = 'rgba(0,229,255,0.5)'
+      ctx.beginPath(); ctx.arc(cx2, cy2, 2.5, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = 'rgba(0,229,255,0.25)'; ctx.font = '5px monospace'
+      ctx.fillText('cam', camX - 7, camY + 18)
 
-      // Hidden State 流粒子
-      if (time % 18 === 0) flowParticles.push({ x: cells[0].x - 10, y: hiddenY, speed: 0.9 + Math.random() * 0.4 })
-      flowParticles = flowParticles.filter(p => {
-        p.x += p.speed; if (p.x > cells[cells.length - 1].x + cells[0].w + 20) return false
-        const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, 4)
-        g.addColorStop(0, 'rgba(0,229,255,0.5)'); g.addColorStop(1, 'transparent')
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI * 2); ctx.fill()
-        return true
-      })
-
-      // 门控连接线（居中匹配）
-      cells.forEach((cell, ci) => {
-        const gOff = (cell.w - 3 * 10 - 2 * 6) / 2
-        const fCx = cell.x + gOff + 5, iCx = cell.x + gOff + 21, oCx = cell.x + gOff + 37
-        ctx.strokeStyle = `rgba(255,100,100,${0.06 + Math.sin(time * 0.06 + ci) * 0.04})`; ctx.lineWidth = 0.5
-        ctx.beginPath(); ctx.moveTo(fCx, cell.y - 3); ctx.lineTo(fCx, stateY); ctx.stroke()
-        ctx.strokeStyle = `rgba(0,229,255,${0.06 + Math.sin(time * 0.06 + ci + 1) * 0.04})`
-        ctx.beginPath(); ctx.moveTo(iCx, cell.y - 3); ctx.lineTo(iCx, stateY); ctx.stroke()
-        ctx.strokeStyle = `rgba(0,230,118,${0.06 + Math.sin(time * 0.06 + ci + 2) * 0.04})`
-        ctx.beginPath(); ctx.moveTo(oCx, cell.y + 13); ctx.lineTo(oCx, hiddenY); ctx.stroke()
-      })
+      // Splatting 标签
+      ctx.fillStyle = 'rgba(180,130,255,0.3)'; ctx.font = '6px monospace'
+      ctx.fillText('Gaussian Splatting', 8, H - 8)
 
       animationIds[9] = requestAnimationFrame(frame)
     }
