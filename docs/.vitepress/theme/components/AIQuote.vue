@@ -3,7 +3,7 @@
     <span class="ai-quote-text">
       <span v-for="(ch, ci) in quoteChars" :key="ci" class="ai-quote-char" :style="{ animationDelay: ci * 25 + 'ms' }">{{ ch }}</span>
     </span>
-    <span class="ai-quote-author">— {{ quote.author }}</span>
+    <span class="ai-quote-author" :style="{ animationDelay: quoteChars.length * 25 + 300 + 'ms' }">— {{ quote.author }}</span>
   </div>
 </template>
 
@@ -97,7 +97,7 @@ watch(() => route.path, pickQuote)
   opacity: 0;
   white-space: nowrap;
   animation: author-in 0.5s ease-out forwards;
-  animation-delay: 1.8s;
+  /* delay is set dynamically via :style */
 }
 
 @keyframes author-in {
