@@ -5,13 +5,13 @@
       <span class="tech-title-line" />
     </div>
     <div class="tech-grid" ref="gridRef">
-      <div class="tech-card" v-for="(tech, i) in techs" :key="i">
+      <a class="tech-card" v-for="(tech, i) in techs" :key="i" :href="tech.link">
         <canvas class="tech-canvas" />
         <div class="tech-info">
           <span class="tech-name">{{ tech.name }}</span>
           <span class="tech-desc">{{ tech.desc }}</span>
         </div>
-      </div>
+      </a>
     </div>
   </div>
 </template>
@@ -22,19 +22,20 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 const gridRef = ref(null)
 let animationIds = []
 
+const base = '/前沿技术/'
 const techs = [
-  { name: 'Large Language Model', desc: 'Token Generation & Attention' },
-  { name: 'Diffusion Model', desc: 'Noise → Structure' },
-  { name: 'CNN', desc: 'Convolution & Pooling' },
-  { name: 'Reinforcement Learning', desc: 'Agent Policy Optimization' },
-  { name: 'GAN', desc: 'Generator vs Discriminator' },
-  { name: 'LLM Reasoning', desc: 'Chain-of-Thought Planning' },
-  { name: 'Multimodal AI', desc: 'Vision-Language Alignment' },
-  { name: 'Embodied AI', desc: 'Perception-Action Loop' },
-  { name: 'Neuro-Symbolic', desc: 'Neural + Logic Reasoning' },
-  { name: '3D Gaussian', desc: 'Gaussian Splatting Rendering' },
-  { name: 'Video Understanding', desc: 'Temporal-Spatial Reasoning' },
-  { name: 'AI for Science', desc: 'Scientific Discovery Engine' },
+  { name: 'Large Language Model', desc: 'Token Generation & Attention', link: base + '1-大语言模型' },
+  { name: 'Diffusion Model', desc: 'Noise → Structure', link: base + '2-扩散模型' },
+  { name: 'CNN', desc: 'Convolution & Pooling', link: base + '3-卷积神经网络' },
+  { name: 'Reinforcement Learning', desc: 'Agent Policy Optimization', link: base + '4-强化学习' },
+  { name: 'GAN', desc: 'Generator vs Discriminator', link: base + '5-生成对抗网络' },
+  { name: 'LLM Reasoning', desc: 'Chain-of-Thought Planning', link: base + '6-大模型推理' },
+  { name: 'Multimodal AI', desc: 'Vision-Language Alignment', link: base + '7-多模态AI' },
+  { name: 'Embodied AI', desc: 'Perception-Action Loop', link: base + '8-具身智能' },
+  { name: 'Neuro-Symbolic', desc: 'Neural + Logic Reasoning', link: base + '9-神经符号学习' },
+  { name: '3D Gaussian', desc: 'Gaussian Splatting Rendering', link: base + '10-3D高斯' },
+  { name: 'Video Understanding', desc: 'Temporal-Spatial Reasoning', link: base + '11-视频理解' },
+  { name: 'AI for Science', desc: 'Scientific Discovery Engine', link: base + '12-AI-for-Science' },
 ]
 
 onMounted(() => {
@@ -1342,6 +1343,10 @@ onUnmounted(() => {
 }
 
 .tech-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
   position: relative;
   border-radius: 16px;
   overflow: hidden;
